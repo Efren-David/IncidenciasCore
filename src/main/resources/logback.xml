@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<include
+			resource="org/springframework/boot/logging/logback/defaults.xml" />
+
+	<property name="springAppName"
+	          value="IncidenciasCore" />
+	<!-- Example for logging into the build folder of your project -->
+	<property name="LOG_FILE"
+	          value="${BUILD_FOLDER:-log}/${springAppName}" />
+	<property name="LOG_MONITOREO"
+	          value="${BUILD_FOLDER:-logMonitoreo}/Monitoreo${springAppName}" />
+
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<layout>
+			<Pattern>%-4r [%thread] %-5level %X{transaction-id} - msg%n</Pattern>
+		</layout>
+	</appender>
+	<!-- You can override this to have a custom pattern -->
+	<property name="CONSOLE_LOG_PATTERN"
+	          value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}" />
+
+	<!-- Appender to log to console -->
+	<appender name="console"
+	          class="ch.qos.logback.core.ConsoleAppender">
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<!-- Minimum logging level to be presented in the console logs -->
+			<level>DEBUG</level>
+		</filter>
+		<encoder
+				class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<timestamp>
+				</timestamp>
+				<pattern>
+					<pattern>
+						{"level": "%level","service": "${springAppName:-}","trace": "%X{X-B3-TraceId:-}","span": "%X{X-B3-SpanId:-}",
+						"parent": "%X{X-B3-ParentSpanId:-}","thread": "%thread","class": "%logger{40}:%line","message": "%X{transaction-id} %message" }
+
+					</pattern>
+				</pattern>
+				<arguments />
+			</providers>
+		</encoder>
+	</appender>
+
+	<!-- Appender to log to file -->
+
+	<appender name="flatfile"
+	          class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_FILE}</file>
+		<rollingPolicy
+				class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_FILE}.%d{yyyyMMdd-HH-mm}.%i.gz</fileNamePattern>
+			<maxHistory>7</maxHistory>
+			<timeBasedFileNamingAndTriggeringPolicy
+					class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>500MB</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+		</rollingPolicy>
+		<encoder
+				class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<timestamp>
+				</timestamp>
+				<pattern>
+					<pattern>
+						{"level": "%level","service": "${springAppName:-}","trace": "%X{X-B3-TraceId:-}","span": "%X{X-B3-SpanId:-}",
+						"parent": "%X{X-B3-ParentSpanId:-}", "thread": "%thread", "class": "%logger{40}:%line", "message": "%X{transaction-id} %message" }
+					</pattern>
+				</pattern>
+				<arguments />
+
+			</providers>
+		</encoder>
+	</appender>
+
+	<!-- Appender to log to file in a JSON format -->
+	<appender name="logstash"
+	          class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_FILE}.json</file>
+		<rollingPolicy
+				class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${LOG_FILE}.json.%d{yyyy-MM-dd}.gz</fileNamePattern>
+			<maxHistory>7</maxHistory>
+		</rollingPolicy>
+		<encoder
+				class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<timestamp>
+				</timestamp>
+				<pattern>
+					<pattern>
+						{ "level": "%level", "service": "${springAppName:-}", "trace": "%X{X-B3-TraceId:-}", "span": "%X{X-B3-SpanId:-}", "parent": "%X{X-B3-ParentSpanId:-}",
+						"thread": "%thread", "class": "%logger{40}:%line", "message": "%X{transaction-id} %message" }
+					</pattern>
+				</pattern>
+				<arguments />
+			</providers>
+		</encoder>
+	</appender>
+
+	<!--  Log Monitoreo Config -->
+
+	<appender name="RollingFileMonitoreo"
+	          class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_MONITOREO}.log</file>
+		<encoder
+				class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<nestedField>
+					<fieldName>log_data</fieldName>
+					<providers>
+						<pattern>
+							<pattern>
+								{
+								"fecha": "%date{yyyy-MM-dd HH:mm:ss}",
+								"Level": "%level",
+								"Mensaje": "%message",
+								"servicios": "#asJson{%mdc{servicios}}",
+								"TiempoTotal": "#asLong{%mdc{tiempoTotal}}"
+								}
+							</pattern>
+						</pattern>
+					</providers>
+				</nestedField>
+			</providers>
+		</encoder>
+		<rollingPolicy
+				class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<!-- rollover daily and when the file reaches 500 MegaBytes -->
+			<fileNamePattern>${LOG_MONITOREO}.%d{yyyy-MM-dd}.%i.log
+			</fileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy
+					class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>500MB</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+		</rollingPolicy>
+	</appender>
+	<appender name="Console"
+	          class="ch.qos.logback.core.ConsoleAppender">
+		<encoder
+				class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+			<providers>
+				<nestedField>
+					<fieldName>log_data</fieldName>
+					<providers>
+						<pattern>
+							<pattern>
+								{
+								"fecha": "%date{yyyy-MM-dd HH:mm:ss}",
+								"Level": "%level",
+								"Mensaje": "%message",
+								"servicios": "#asJson{%mdc{servicios}}",
+								"TiempoTotal": "#asLong{%mdc{tiempoTotal}}"
+								}
+							</pattern>
+						</pattern>
+					</providers>
+				</nestedField>
+			</providers>
+		</encoder>
+	</appender>
+	<!-- Log Monitoreo Config END -->
+
+	<logger name="monitoreo" level="DEBUG" additivity="false">
+		<appender-ref ref="RollingFileMonitoreo"/>
+		<appender-ref ref="Console"/>
+	</logger>
+
+	<root level="INFO">
+		<appender-ref ref="console" />
+		<!-- uncomment this to have also JSON logs -->
+		<appender-ref ref="flatfile"/>
+		<appender-ref ref="logstash"/>
+	</root>
+</configuration>
